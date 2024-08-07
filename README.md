@@ -8,7 +8,7 @@ Text editor
 
 ### Open a file
 
-- nhotepad <file>
+- nhotepad file
 
 ### Options
 
