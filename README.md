@@ -12,11 +12,10 @@ Text editor
 
 ### Options
 
-- `C+o`: open a file and save current file
-- `C+O`: open a file without saving
-- `C+s`: save a file
-- `C+S`: save a copy
-- `C+q`: save and quit
-- `C+Q`: quit without saving
+- `C+o`: open a file
+- `C+s`: save
+- `C+q`: quit
 
+> [!note]
+> Nowadays you cant open, save or write in a file
 
