@@ -1,4 +1,5 @@
 #include "nh.h"
+#include "termstuff.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -177,7 +178,6 @@ enableRawMode()
 {
     tcgetattr(STDIN_FILENO, &origin_termios);
     struct termios raw;
-    // raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     raw.c_iflag &=
     ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
     raw.c_oflag &= ~(OPOST);
@@ -199,13 +199,21 @@ mssleep(int milliseconds)
     nanosleep(&t, &_t);
 }
 
+unsigned char KB_ACTIVE = 1;
+
+void
+kb_die()
+{
+    KB_ACTIVE = 0;
+    term_clear_screen();
+}
+
 void
 kb_handler()
 {
-    unsigned char KB_ACTIVE = 1;
-    ssize_t       ret;
-    Action        action;
-    char          key;
+    ssize_t ret;
+    Action  action;
+    char    key;
 
     enableRawMode();
 
@@ -217,20 +225,39 @@ kb_handler()
             // check if ctrl mod
             if (key > 0x0 && key < 0x1b)
             {
-                if (key == 0x3) // C-c
-                {
-                    KB_ACTIVE = 0;
-                    continue;
-                }
                 if ((action = search(CTRL_M, key + 0x60)) != NULL)
                     action();
             }
-
+            else if (key == '\033') // the following code may not work for everyone, said stackoverflow.
+            {
+                if (read(STDIN_FILENO, &key, 1)) // [ after \033
+                    if (read(STDIN_FILENO, &key, 1))
+                    {
+                        switch (key)
+                        {
+                            case 'A':
+                                arrowup();
+                                break;
+                            case 'B':
+                                arrowdown();
+                                break;
+                            case 'C':
+                                arrowright();
+                                break;
+                            case 'D':
+                                arrowleft();
+                                break;
+                            default:
+                                nh_write(key);
+                                break;
+                        }
+                    }
+            }
             else
                 nh_write(key);
         }
         else
-            mssleep(100);
+            mssleep(SLEEP_MS);
 
         fflush(stdout);
     }

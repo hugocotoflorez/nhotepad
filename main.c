@@ -10,8 +10,12 @@ main()
     open_buffer("nh.h", &buffer);
     load_buffer(buffer);
 
+    bind(CTRL_M, 'q', kb_die);
+    bind(CTRL_M, 'h', arrowleft);
+    bind(CTRL_M, 'j', arrowdown);
+    bind(CTRL_M, 'k', arrowup);
+    bind(CTRL_M, 'l', arrowright);
 
-    print_buffer();
     kb_handler();
 
     return 0;

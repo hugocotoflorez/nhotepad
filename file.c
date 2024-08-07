@@ -9,6 +9,7 @@ open_buffer(const char *filename, Buffer *buffer)
 {
     char  buff[LINE_MAX_LEN];
     FILE *f;
+    char *c;
     buffer->size = 0;
     buffer->data = NULL;
 
@@ -21,13 +22,23 @@ open_buffer(const char *filename, Buffer *buffer)
         assert(buffer->data);
         buffer->data[buffer->size] = malloc(sizeof(char *) * (strlen(buff) + 1));
         assert(buffer->data[buffer->size]);
+
+        c = buff;
+        while (*c != '\0')
+        {
+            if (*c == '\n')
+                *c = ' ';
+            else if (*c == '\0')
+                *c = ' ';
+
+            ++c;
+        }
+
         strcpy(buffer->data[buffer->size], buff);
-        // todo:
-        // /t -> '    '
-        // /n -> '\0'
         ++buffer->size;
     }
     fclose(f);
+    strncpy(buffer->filename, filename, FNAME_LEN);
 }
 
 void
