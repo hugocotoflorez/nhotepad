@@ -12,8 +12,23 @@ Vec2d  buffer_posi = { 0, 0 }; // buffer's pointer position
 Buffer buffer      = { 0 };    // file text buffer
 Vec2d  fullscreen  = { 0, 0 };
 
-void print_cursorline();
-void print_buffer();
+// function defs
+void  print_cursorline();
+void  print_buffer();
+void  nh_write(char c);
+void  print_header();
+void  print_cursorline();
+void  arrowleft();
+void  arrowright();
+void  arrowdown();
+void  arrowup();
+void  load_buffer(Buffer buff);
+Vec2d get_fullscreen();
+void  backspace();
+void  cursor_left_adjust();
+void  swap_lines(line_t *line1, line_t *line2);
+
+// {{{ misc
 
 Vec2d
 get_fullscreen()
@@ -26,8 +41,8 @@ get_fullscreen()
     return size;
 }
 
-__attribute__((constructor)) void
-init_ui()
+__attribute__((constructor)) static void
+init()
 {
     fullscreen    = get_fullscreen();
     cursor_posi.i = MARGIN_TOP + 1;
@@ -42,71 +57,36 @@ load_buffer(Buffer buff)
     print_buffer();
 }
 
+Vec2d
+get_relative_position()
+{
+    return (Vec2d){
+        .i = buffer_posi.i + cursor_posi.i - 1 - MARGIN_TOP,
+        .j = cursor_posi.j + buffer_posi.j - 1 - MARGIN_LEFT,
+    };
+}
+
+// }}}
+
 // {{{ arrow movement
 
 void
 arrowup()
 {
-    if (cursor_posi.i > MARGIN_LINES + MARGIN_TOP + 1)
-    {
-        --cursor_posi.i;
-        term_cursor_up(1);
-        return;
-    }
-    if (buffer_posi.i > 0)
-    {
-        --buffer_posi.i;
-        print_buffer();
-        return;
-    }
-    if (cursor_posi.i > MARGIN_TOP + 1)
-    {
-        --cursor_posi.i;
-        term_cursor_up(1);
-        return;
-    }
 }
 
 void
 arrowdown()
 {
-    if (cursor_posi.i < fullscreen.i - MARGIN_LINES - MARGIN_BOTTOM)
-    {
-        ++cursor_posi.i;
-        term_cursor_down(1);
-        return;
-    }
-    if (buffer_posi.i - 1 <= buffer.size - fullscreen.i)
-    {
-        ++buffer_posi.i;
-        print_buffer();
-        return;
-    }
-    if (cursor_posi.i < fullscreen.i - MARGIN_BOTTOM)
-    {
-        ++cursor_posi.i;
-        term_cursor_down(1);
-        return;
-    }
 }
 
 void
 arrowright()
 {
-    if (cursor_posi.j < fullscreen.j - MARGIN_RIGHT)
-    {
-        ++cursor_posi.j;
-        term_cursor_forward(1);
-    }
 }
 void
 arrowleft()
 {
-    if (cursor_posi.j > MARGIN_LEFT + 1)
-    {
-        --cursor_posi.j;
-        term_cursor_back(1);
-    }
 }
 /// }}}
 
@@ -115,7 +95,6 @@ arrowleft()
 void
 print_cursorline()
 {
-    print_buffer();
 }
 
 void
@@ -166,8 +145,8 @@ print_buffer()
     horizontal_size = fullscreen.j - MARGIN_LEFT - MARGIN_RIGHT;
     cursor_posi.i   = MARGIN_TOP;
 
-    if (buffer.size < fullscreen.i - MARGIN_TOP - MARGIN_BOTTOM)
-        range = buffer.size;
+    if (buffer.length < fullscreen.i - MARGIN_TOP - MARGIN_BOTTOM)
+        range = buffer.length;
     else
         range = fullscreen.i - MARGIN_TOP - MARGIN_BOTTOM;
 
@@ -175,7 +154,8 @@ print_buffer()
     for (i = 0; i < range; i++)
     {
         term_cursor_position(++cursor_posi.i, MARGIN_LEFT + 1);
-        printf("%-*s", horizontal_size, buffer.data[buffer_posi.i + i]);
+        printf("%-*s", horizontal_size,
+               buffer_get(buffer, buffer_posi.i + i).data);
     }
     term_apply_font_effects(NORMAL);
 
@@ -183,11 +163,29 @@ print_buffer()
     cursor_posi = curr_cursor_posi;
 }
 
-// }}}
+void
+cursor_left_adjust()
+{
+    Vec2d relposi = get_relative_position();
+    int   len     = buffer_get(buffer, relposi.i + buffer_posi.i).size;
+    while (cursor_posi.j + buffer_posi.j - 1 - MARGIN_LEFT > len)
+    {
+        --cursor_posi.j;
+        term_cursor_back(1);
+    }
+}
 
 void
 nh_write(char c)
 {
-    // TODO
-    assert(buffer.data != NULL);
 }
+
+// }}}
+
+// {{{ Special keys
+void
+backspace()
+{
+}
+
+// }}}

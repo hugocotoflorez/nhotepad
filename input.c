@@ -16,6 +16,90 @@
  * If other functions are needed, please test it (message for myself)
  */
 
+// {{{ misc
+
+int
+is_special_key(char key)
+{
+    return (key < 0x20) || (key == 0x7f);
+}
+
+void
+nh_arrowkey(char key)
+{
+    switch (key)
+    {
+        case 'A':
+            arrowup();
+            break;
+        case 'B':
+            arrowdown();
+            break;
+        case 'C':
+            arrowright();
+            break;
+        case 'D':
+            arrowleft();
+            break;
+        default:
+            if (is_special_key(key))
+                nh_special(key);
+            else
+                nh_write(key);
+            break;
+    }
+}
+
+void
+nh_special(AsciiControlCode key)
+{
+    switch (key)
+    {
+        case DEL: // 127
+            backspace();
+            break;
+        case NUL: // 0
+        case SOH: // 1
+        case STX: // 2
+        case ETX: // 3
+        case EOT: // 4
+        case ENQ: // 5
+        case ACK: // 6
+        case BEL: // 7
+        case BS:  // 8
+        case HT:  // 9
+        case LF:  // 10
+        case VT:  // 11
+        case FF:  // 12
+        case CR:  // 13
+        case SO:  // 14
+        case SI:  // 15
+        case DLE: // 16
+        case DC1: // 17
+        case DC2: // 18
+        case DC3: // 19
+        case DC4: // 20
+        case NAK: // 21
+        case SYN: // 22
+        case ETB: // 23
+        case CAN: // 24
+        case EM:  // 25
+        case SUB: // 26
+        case ESC: // 27
+        case FS:  // 28
+        case GS:  // 29
+        case RS:  // 30
+        case US:  // 31
+        case SP:  // 32
+            term_cursor_save_current_possition();
+            printf("(%d)", key);
+            term_cursor_restore_saved_position();
+            break;
+    }
+}
+
+// }}}
+
 // type defs {{{
 
 /*
@@ -144,6 +228,7 @@ search_node(enum MOD mod, char key)
 
 // }}}
 
+// {{{ bind
 void
 bind(enum MOD mod, char key, Action action)
 {
@@ -162,6 +247,8 @@ bind(enum MOD mod, char key, Action action)
     .action = action,
     });
 }
+
+// }}}
 
 // {{{ Raw mode
 
@@ -189,6 +276,7 @@ enableRawMode()
 
 // }}}
 
+// {{{ kb handler
 void
 mssleep(int milliseconds)
 {
@@ -226,33 +314,19 @@ kb_handler()
             if (key > 0x0 && key < 0x1b)
             {
                 if ((action = search(CTRL_M, key + 0x60)) != NULL)
+                {
                     action();
+                    continue;
+                }
             }
-            else if (key == '\033') // the following code may not work for everyone, said stackoverflow.
+            if (key == '\033') // the following code may not work for everyone, said stackoverflow.
             {
                 if (read(STDIN_FILENO, &key, 1)) // [ after \033
                     if (read(STDIN_FILENO, &key, 1))
-                    {
-                        switch (key)
-                        {
-                            case 'A':
-                                arrowup();
-                                break;
-                            case 'B':
-                                arrowdown();
-                                break;
-                            case 'C':
-                                arrowright();
-                                break;
-                            case 'D':
-                                arrowleft();
-                                break;
-                            default:
-                                nh_write(key);
-                                break;
-                        }
-                    }
+                        nh_arrowkey(key);
             }
+            else if (is_special_key(key))
+                nh_special(key);
             else
                 nh_write(key);
         }
@@ -264,3 +338,5 @@ kb_handler()
 
     disableRawMode();
 }
+
+// }}}

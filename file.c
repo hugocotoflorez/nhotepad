@@ -10,32 +10,24 @@ open_buffer(const char *filename, Buffer *buffer)
     char  buff[LINE_MAX_LEN];
     FILE *f;
     char *c;
-    buffer->size = 0;
-    buffer->data = NULL;
+
+    *buffer = buffer_create(1);
 
     f = fopen(filename, "r+");
     assert(f != NULL);
 
     while (fgets(buff, LINE_MAX_LEN, f) != NULL)
     {
-        buffer->data = realloc(buffer->data, sizeof(char *) * (buffer->size + 1));
-        assert(buffer->data);
-        buffer->data[buffer->size] = malloc(sizeof(char *) * (strlen(buff) + 1));
-        assert(buffer->data[buffer->size]);
-
         c = buff;
         while (*c != '\0')
         {
             if (*c == '\n')
-                *c = ' ';
-            else if (*c == '\0')
-                *c = ' ';
-
-            ++c;
+                *c = '\0';
+            else
+                ++c;
         }
 
-        strcpy(buffer->data[buffer->size], buff);
-        ++buffer->size;
+        buffer_append(buffer, newline(buff));
     }
     fclose(f);
     strncpy(buffer->filename, filename, FNAME_LEN);
