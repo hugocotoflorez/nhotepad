@@ -11,6 +11,4 @@ debug:
 	$(CC) $(FLAGS) -o $(NAME) $(SRC) $(LIB) -g
 
 git:
-	git add *.c *.h README.md makefile
-	git commit -m "autocommit"
-	git push
+	git add $(SRC) README.md makefile libtermstuff.a

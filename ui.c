@@ -2,9 +2,16 @@
 #include "termstuff.h"
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
+
+// static print: print temporal message without moving the cursor
+#define STTPRT(row, ...)                      \
+    {                                         \
+        term_cursor_save_current_possition(); \
+        term_cursor_position(3 + row, 50);    \
+        printf(__VA_ARGS__);                  \
+        term_cursor_restore_saved_position(); \
+    }
 
 // globals
 Vec2d  cursor_posi;            // screen cursor absolute position
@@ -73,21 +80,74 @@ get_relative_position()
 void
 arrowup()
 {
+    Vec2d relposi = get_relative_position();
+
+
+    // cursor can only be here if at first line due to MARGIN_LINES
+    if (relposi.i == 0)
+    {
+        return;
+    }
+
+    if (relposi.i - buffer_posi.i <= MARGIN_LINES && buffer_posi.i > 0) // into scroll section
+    {
+        --buffer_posi.i;
+        print_buffer();
+    }
+    else // can move cursor and not in scroll section
+    {
+        --cursor_posi.i;
+        term_cursor_up(1);
+    }
 }
 
 void
 arrowdown()
 {
+    Vec2d relposi = get_relative_position();
+    int   CANSCROLL =
+    buffer_posi.i + fullscreen.i - MARGIN_TOP - MARGIN_BOTTOM < buffer.length;
+
+    if (relposi.i == buffer.length - 1)
+    {
+        return;
+    }
+
+    if (cursor_posi.i - 1 >= fullscreen.i - MARGIN_TOP - MARGIN_BOTTOM - MARGIN_LINES && CANSCROLL)
+    {
+        ++buffer_posi.i;
+        print_buffer();
+    }
+    else
+    {
+        ++cursor_posi.i;
+        term_cursor_down(1);
+    }
 }
+
 
 void
 arrowright()
 {
+    // without buffer scroll
+    if (cursor_posi.j - 1 < fullscreen.j - MARGIN_LEFT - MARGIN_RIGHT)
+    {
+        ++cursor_posi.j;
+        term_cursor_forward(1);
+    }
 }
+
 void
 arrowleft()
 {
+    // without buffer scroll
+    if (cursor_posi.j - 1 > MARGIN_LEFT)
+    {
+        --cursor_posi.j;
+        term_cursor_back(1);
+    }
 }
+
 /// }}}
 
 // {{{ Print stuff functions
@@ -95,6 +155,19 @@ arrowleft()
 void
 print_cursorline()
 {
+    Vec2d relposi         = get_relative_position();
+    short horizontal_size = fullscreen.j - MARGIN_LEFT - MARGIN_RIGHT;
+
+    term_cursor_save_current_possition();
+    term_cursor_position(relposi.i, MARGIN_LEFT + 1);
+    term_apply_color(FG_COLOR, FG);
+    term_apply_color(BG_COLOR, BG);
+
+    printf("%-*s", horizontal_size,
+           buffer_get(buffer, buffer_posi.i + relposi.i).data);
+
+    term_apply_font_effects(NORMAL);
+    term_cursor_restore_saved_position();
 }
 
 void
@@ -135,6 +208,7 @@ print_buffer()
     Vec2d curr_cursor_posi = cursor_posi;
 
     term_cursor_save_current_possition();
+    term_cursor_hide();
 
     term_clear_screen();
     print_header(); // cursor is placed just after header
@@ -159,6 +233,7 @@ print_buffer()
     }
     term_apply_font_effects(NORMAL);
 
+    term_cursor_show();
     term_cursor_restore_saved_position();
     cursor_posi = curr_cursor_posi;
 }

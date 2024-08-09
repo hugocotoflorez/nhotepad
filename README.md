@@ -17,5 +17,5 @@ Text editor
 - `C+q`: quit
 
 > [!note]
-> Nowadays you cant open, save or write in a file
+> Nowadays you cant open or save custom files
 

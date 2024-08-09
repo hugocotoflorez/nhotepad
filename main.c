@@ -7,7 +7,7 @@ int
 main()
 {
     Buffer buffer;
-    open_buffer("main.c", &buffer);
+    open_buffer("nh.h", &buffer);
     load_buffer(buffer);
 
     bind(CTRL_M, 'q', kb_die);
