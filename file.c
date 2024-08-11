@@ -14,7 +14,11 @@ open_buffer(const char *filename, Buffer *buffer)
     *buffer = buffer_create(1);
 
     f = fopen(filename, "r+");
-    assert(f != NULL);
+    if (f == NULL)
+    {
+        fprintf(stderr, "Error while trying to open the file");
+        exit(1);
+    }
 
     while (fgets(buff, LINE_MAX_LEN, f) != NULL)
     {
@@ -29,8 +33,8 @@ open_buffer(const char *filename, Buffer *buffer)
 
         buffer_append(buffer, newline(buff));
     }
-    fclose(f);
     strncpy(buffer->filename, filename, FNAME_LEN);
+    fclose(f);
 }
 
 void

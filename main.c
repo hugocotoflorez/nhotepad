@@ -1,22 +1,27 @@
 #include "nh.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 
 int
-main()
+main(int argc, char *argv[])
 {
     Buffer buffer;
-    open_buffer("nh.h", &buffer);
-    load_buffer(buffer);
 
-    bind(CTRL_M, 'q', kb_die);
-    bind(CTRL_M, 'h', arrowleft);
-    bind(CTRL_M, 'j', arrowdown);
-    bind(CTRL_M, 'l', arrowright);
-    bind(CTRL_M, 'k', arrowup);
+    if (argc == 2)
+    {
+        open_buffer(argv[1], &buffer);
+        load_buffer(buffer);
 
-    kb_handler();
+        bind_ctrl('q', kb_die);
+        bind_ctrl('h', arrowleft);
+        bind_ctrl('j', arrowdown);
+        bind_ctrl('l', arrowright);
+        bind_ctrl('k', arrowup);
+
+        kb_handler();
+    }
 
     return 0;
 }

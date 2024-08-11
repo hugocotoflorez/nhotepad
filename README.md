@@ -12,10 +12,20 @@ Text editor
 
 ### Options
 
-- `C+o`: open a file
-- `C+s`: save
 - `C+q`: quit
+- `Arrow up`: move up
+- `Arrow down`: move down
+- `Arrow left`: move left
+- `Arrow right`: move right
 
-> [!note]
-> Nowadays you cant open or save custom files
+### Info about development
 
+#### Stuff that work
+
+- Keyboard handler
+- Control + A - Z binds
+- Custom binds
+- Write characters
+- Delete characters
+- Open files from command line
+- Arrow movement

@@ -6,8 +6,9 @@ line_t
 newline(char *str)
 {
     line_t newl;
-    newl.size = strlen(str);
-    newl.data = strdup(str);
+    newl.length   = strlen(str) + 1;
+    newl.capacity = strlen(str) + 1;
+    newl.data     = strdup(str);
     return newl;
 }
 
@@ -58,7 +59,7 @@ _swap(Buffer *buffer, int i, int j)
 void
 buffer_insert(Buffer *buffer, int index, line_t element)
 {
-    if (index >= buffer->length)
+    if (index > buffer->length)
         return;
     buffer_append(buffer, element);
     for (int i = buffer->length - 1; i > index; i--)
@@ -69,7 +70,7 @@ buffer_insert(Buffer *buffer, int index, line_t element)
 line_t
 buffer_remove(Buffer *buffer, int index)
 {
-    line_t temp;
+    line_t *temp;
     if (index >= buffer->length)
         return ELEM_ERR;
     temp = buffer_get(*buffer, index);
@@ -79,14 +80,84 @@ buffer_remove(Buffer *buffer, int index)
         buffer->data[i] = buffer->data[i + 1];
     }
     --buffer->length;
-    return temp;
+    return *temp;
 }
 
 
-line_t
+line_t *
 buffer_get(Buffer buffer, int index)
 {
     if (index >= buffer.length)
-        return ELEM_ERR;
-    return *((line_t *) buffer.data[index]);
+        return NULL;
+    return buffer.data[index];
+}
+
+/*
+ * LINE STUFF
+ */
+
+void
+_line_resize(line_t *line)
+{
+    line->capacity *= AL_INCREMENT;
+    line->data = realloc(line->data, line->capacity * sizeof(line_t *));
+}
+
+int
+line_append(line_t *line, char c)
+{
+    if (line->length == line->capacity)
+        _line_resize(line);
+    line->data[line->length] = c;
+    return line->length++;
+}
+
+void
+line_modify(line_t *line, int index, char c)
+{
+    if (index >= line->length)
+        return;
+    line->data[index] = c;
+}
+
+// i and j MUST be 0<=i,j<length
+void
+_swapchars(line_t *line, int i, int j)
+{
+    char temp     = line->data[i];
+    line->data[i] = line->data[j];
+    line->data[j] = temp;
+}
+
+void
+line_insert(line_t *line, int index, char c)
+{
+    if (index >= line->length)
+        return;
+    line_append(line, c);
+    for (int i = line->length - 1; i > index; i--)
+        _swapchars(line, i, i - 1);
+}
+
+char
+line_get(line_t line, int index)
+{
+    if (index >= line.length)
+        return '\0';
+    return line.data[index];
+}
+
+char
+line_remove(line_t *line, int index)
+{
+    char temp;
+    if (index >= line->length)
+        return '\0';
+    temp = line_get(*line, index);
+    for (int i = index; i < line->length; i++)
+    {
+        line->data[i] = line->data[i + 1];
+    }
+    --line->length;
+    return temp;
 }
