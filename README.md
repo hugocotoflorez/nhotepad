@@ -20,6 +20,8 @@ Text editor
 
 ### Info about development
 
+Please, let me know any issue or but that you find!
+
 #### Stuff that work
 
 - Keyboard handler
@@ -28,4 +30,6 @@ Text editor
 - Write characters
 - Delete characters
 - Open files from command line
+- Save files
+- Close buffers
 - Arrow movement

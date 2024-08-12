@@ -51,6 +51,12 @@ load_buffer(Buffer buff)
     print_buffer();
 }
 
+void
+save_current_buffer()
+{
+    save_buffer(&buffer);
+}
+
 Vec2d
 get_relative_position()
 {
@@ -196,6 +202,8 @@ print_header()
     printf("%s", buffer.filename);
     term_apply_font_effects(ITALIC_OFF);
     printf(")  ");
+
+    term_cursor_position(2, MARGIN_LEFT + 1);
     term_apply_color(BLACK, BRIGHT_FG);
     term_apply_font_effects(INVERSE);
     printf("[C-q] Quit | [C-s] Save | [C-o] Open");
@@ -246,7 +254,8 @@ print_buffer()
 void
 nh_write(char c)
 {
-    Vec2d   relposi  = get_relative_position();
+    Vec2d   relposi = get_relative_position();
+    Vec2d   curr_cursor_posi;
     line_t *currline = buffer_get(buffer, relposi.i);
     int     nullchar_before_cursor =
     currline->data[relposi.j - 1] == '\0' && relposi.j > 0;
@@ -271,12 +280,32 @@ nh_write(char c)
     }
     else
     {
-        buffer_insert(&buffer, relposi.i + buffer_posi.i + 1, newline("\0"));
-        ++cursor_posi.i;
-        cursor_posi.j = MARGIN_LEFT + 1;
-        term_cursor_position(cursor_posi.i, cursor_posi.j);
+        if (relposi.j == LINE_MAX_LEN - 1)
+        {
+            buffer_insert(&buffer, relposi.i + buffer_posi.i + 1, newline("\0"));
+            ++cursor_posi.i;
+            cursor_posi.j = MARGIN_LEFT + 1;
+            term_cursor_position(cursor_posi.i, cursor_posi.j);
+            nh_write(c);
+        }
+        else
+        {
+            line_insert(currline, relposi.j, c);
+            putchar(c);
+            ++cursor_posi.j;
+            curr_cursor_posi = cursor_posi;
+            c                = line_remove(currline, currline->length - 2);
+            ++cursor_posi.i;
+            cursor_posi.j = MARGIN_LEFT + 1;
+            term_cursor_position(cursor_posi.i, cursor_posi.j);
+            if (relposi.i + buffer_posi.i == buffer.length - 1)
+                buffer_insert(&buffer, relposi.i + buffer_posi.i + 1, newline("\0"));
+            nh_write(c);
+            cursor_posi = curr_cursor_posi;
+            term_cursor_position(cursor_posi.i, cursor_posi.j);
+        }
+
         print_buffer();
-        nh_write(c);
     }
 }
 
