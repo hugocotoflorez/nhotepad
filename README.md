@@ -25,11 +25,10 @@ Please, let me know any issue or but that you find!
 #### Stuff that work
 
 - Keyboard handler
-- Control + A - Z binds
-- Custom binds
-- Write characters
-- Delete characters
+- Customizable control + A - Z binds
+- Write and delete characters
+- Arrow movement
+- Enter, tab
 - Open files from command line
 - Save files
 - Close buffers
-- Arrow movement
