@@ -4,6 +4,8 @@
 
 Text editor
 
+![Screenshot](./image.png)
+
 ## Usage:
 
 ### Open a file
