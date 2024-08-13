@@ -58,7 +58,7 @@ save_current_buffer()
 }
 
 Vec2d
-get_relative_position()
+get_buffer_index()
 {
     return (Vec2d){
         .i = buffer_posi.i + cursor_posi.i - 1 - MARGIN_TOP,
@@ -67,22 +67,32 @@ get_relative_position()
 }
 
 void
+nullchar_before_cursor()
+{
+    Vec2d   buffer_index = get_buffer_index();
+    line_t *currline     = buffer_get(buffer, buffer_index.i);
+
+    while (buffer_index.j > 0 && currline->data[buffer_index.j - 1] == '\0')
+    {
+        --cursor_posi.j;
+        --buffer_index.j;
+        term_cursor_back(1);
+    }
+}
+
+void
 cursor_left_adjust()
 {
-    Vec2d   relposi  = get_relative_position();
-    line_t *currline = buffer_get(buffer, relposi.i);
+    Vec2d   buffer_index = get_buffer_index();
+    line_t *currline     = buffer_get(buffer, buffer_index.i);
 
     while (cursor_posi.j + buffer_posi.j - 1 - MARGIN_LEFT > currline->length)
     {
         --cursor_posi.j;
-        --relposi.j;
+        --buffer_index.j;
         term_cursor_back(1);
     }
-    if (currline->data[relposi.j - 1] == '\0' && relposi.j > 0)
-    {
-        --cursor_posi.j;
-        term_cursor_back(1);
-    }
+    nullchar_before_cursor();
 }
 
 
@@ -93,13 +103,13 @@ cursor_left_adjust()
 void
 arrowup()
 {
-    Vec2d relposi = get_relative_position();
+    Vec2d buffer_index = get_buffer_index();
 
     // cursor can only be here if at first line due to MARGIN_LINES
-    if (relposi.i == 0)
+    if (buffer_index.i == 0)
         return;
 
-    if (relposi.i - buffer_posi.i <= MARGIN_LINES && buffer_posi.i > 0) // into scroll section
+    if (buffer_index.i - buffer_posi.i <= MARGIN_LINES && buffer_posi.i > 0) // into scroll section
     {
         --buffer_posi.i;
         print_buffer();
@@ -115,9 +125,9 @@ arrowup()
 void
 arrowdown()
 {
-    Vec2d relposi = get_relative_position();
+    Vec2d buffer_index = get_buffer_index();
 
-    if (relposi.i == buffer.length - 1)
+    if (buffer_index.i == buffer.length - 1)
         return;
 
     if (cursor_posi.i >= fullscreen.i - MARGIN_TOP - MARGIN_LINES &&
@@ -166,7 +176,7 @@ arrowleft()
 void
 print_cursorline()
 {
-    Vec2d relposi         = get_relative_position();
+    Vec2d buffer_index    = get_buffer_index();
     short horizontal_size = fullscreen.j - MARGIN_LEFT - MARGIN_RIGHT;
 
     term_cursor_save_current_possition();
@@ -174,8 +184,7 @@ print_cursorline()
     term_apply_color(FG_COLOR, FG);
     term_apply_color(BG_COLOR, BG);
 
-    printf("%-*s", horizontal_size,
-           buffer_get(buffer, buffer_posi.i + relposi.i)->data);
+    printf("%-*s", horizontal_size, buffer_get(buffer, buffer_index.i)->data);
 
     term_apply_font_effects(NORMAL);
     term_cursor_restore_saved_position();
@@ -265,51 +274,47 @@ print_buffer()
 void
 nh_write(char c)
 {
-    Vec2d   relposi = get_relative_position();
+    Vec2d   buffer_index = get_buffer_index();
     Vec2d   curr_cursor_posi;
-    line_t *currline = buffer_get(buffer, relposi.i);
-    int     nullchar_before_cursor =
-    currline->data[relposi.j - 1] == '\0' && relposi.j > 0;
+    line_t *currline = buffer_get(buffer, buffer_index.i);
 
     if (currline->length < LINE_MAX_LEN)
     {
-        if (nullchar_before_cursor)
-        {
-            --relposi.j;
-        }
+        nullchar_before_cursor();
 
-        line_insert(currline, relposi.j, c);
-        putchar(c);
+        line_insert(currline, buffer_index.j, c);
+        term_cursor_forward(1);
         ++cursor_posi.j;
 
-        if (nullchar_before_cursor)
-        {
-            --cursor_posi.j;
-            term_cursor_back(1);
-        }
+        nullchar_before_cursor();
     }
     else
     {
-        if (relposi.j == LINE_MAX_LEN - 1)
+        if (buffer_index.j == LINE_MAX_LEN - 1)
         {
-            buffer_insert(&buffer, relposi.i + buffer_posi.i + 1, newline("\0"));
-            ++cursor_posi.i;
+            buffer_insert(&buffer, buffer_index.i + 1, newline("\0"));
+            arrowdown();
             cursor_posi.j = MARGIN_LEFT + 1;
             term_cursor_position(cursor_posi.i, cursor_posi.j);
             nh_write(c);
         }
         else
         {
-            line_insert(currline, relposi.j, c);
-            putchar(c);
+            line_insert(currline, buffer_index.j, c);
+
+            term_cursor_forward(1);
             ++cursor_posi.j;
             curr_cursor_posi = cursor_posi;
-            c                = line_remove(currline, currline->length - 2);
-            ++cursor_posi.i;
+
+            c = line_remove(currline, currline->length - 2);
+
+            arrowdown();
             cursor_posi.j = MARGIN_LEFT + 1;
             term_cursor_position(cursor_posi.i, cursor_posi.j);
-            if (cursor_posi.i == fullscreen.i - MARGIN_BOTTOM)
-                buffer_insert(&buffer, relposi.i + buffer_posi.i + 1, newline("\0"));
+
+            if (buffer_index.i == buffer.length - 1) // last line
+                buffer_append(&buffer, newline("\0"));
+
             nh_write(c);
             cursor_posi = curr_cursor_posi;
             term_cursor_position(cursor_posi.i, cursor_posi.j);
@@ -325,31 +330,31 @@ void
 backspace()
 { // {{{
     Vec2d   curr_cursor_posi;
-    Vec2d   relposi  = get_relative_position();
-    line_t *currline = buffer_get(buffer, relposi.i);
+    Vec2d   buffer_index = get_buffer_index();
+    line_t *currline     = buffer_get(buffer, buffer_index.i);
     char   *temp;
 
-    if (relposi.j > 0)
+    if (buffer_index.j > 0)
     {
-        line_remove(currline, relposi.j - 1);
+        line_remove(currline, buffer_index.j - 1);
         term_cursor_back(1);
         --cursor_posi.j;
     }
-    else if (relposi.i > 0)
+    else if (buffer_index.i > 0)
     {
         --cursor_posi.i;
         cursor_posi.j = LINE_MAX_LEN + MARGIN_LEFT;
         cursor_left_adjust();
         curr_cursor_posi = cursor_posi;
 
-        temp = currline->data + relposi.j;
+        temp = currline->data + buffer_index.j;
         while (*temp != '\0')
         {
             nh_write(*temp);
             ++temp;
         }
 
-        buffer_remove(&buffer, relposi.i);
+        buffer_remove(&buffer, buffer_index.i);
 
         cursor_posi = curr_cursor_posi;
         term_cursor_position(cursor_posi.i, cursor_posi.j);
@@ -363,19 +368,19 @@ backspace()
 void
 enter()
 {
-    Vec2d   relposi  = get_relative_position();
-    line_t *currline = buffer_get(buffer, relposi.i);
+    Vec2d   buffer_index = get_buffer_index();
+    line_t *currline     = buffer_get(buffer, buffer_index.i);
 
 
-    buffer_insert(&buffer, relposi.i + buffer_posi.i + 1,
-                  newline(currline->data + relposi.j));
+    buffer_insert(&buffer, buffer_index.i + 1,
+                  newline(currline->data + buffer_index.j));
 
     if (cursor_posi.i == fullscreen.i - MARGIN_BOTTOM)
         ++buffer_posi.i;
     else
         ++cursor_posi.i;
 
-    currline->data[relposi.j] = '\0';
+    currline->data[buffer_index.j] = '\0';
 
     cursor_posi.j = MARGIN_LEFT + 1;
     term_cursor_position(cursor_posi.i, cursor_posi.j);
@@ -385,8 +390,8 @@ enter()
 void
 tab()
 {
-    Vec2d   relposi  = get_relative_position();
-    line_t *currline = buffer_get(buffer, relposi.i);
+    Vec2d   buffer_index = get_buffer_index();
+    line_t *currline     = buffer_get(buffer, buffer_index.i);
     short   size =
     (LINE_MAX_LEN - currline->length > 4) ? 4 : LINE_MAX_LEN - currline->length;
 
