@@ -10,5 +10,11 @@ all:
 debug:
 	$(CC) $(FLAGS) -o $(NAME) $(SRC) $(LIB) -g
 
-git:
+add:
 	git add $(SRC) README.md makefile libtermstuff.a nh.h
+
+install: all
+	install $(NAME) /usr/local/bin/
+
+uninstall:
+	rm /usr/local/bin/$(NAME)

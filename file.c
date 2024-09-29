@@ -23,10 +23,12 @@ open_buffer(const char *filename, Buffer *buffer)
     while (fgets(line_str, LINE_MAX_LEN, f) != NULL)
     {
         c = line_str;
-        while (*c != '\0')
+        while (*c != '\0' && c - line_str < LINE_MAX_LEN)
         {
             if (*c == '\n')
                 *c = '\0';
+            else if (*c == '\t')
+                *c = ' ';
             else
                 ++c;
         }

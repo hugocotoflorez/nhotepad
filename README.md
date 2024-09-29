@@ -1,4 +1,4 @@
-# nhotepad
+# nhotepad \[ɲowtpˈad\]
 
 ## About:
 

@@ -25,7 +25,7 @@
 #define FG_COLOR WHITE
 // ---------------------
 
-#define LINE_MAX_LEN 40
+#define LINE_MAX_LEN 80
 #define FNAME_LEN 30 // filename length
 
 #define MARGIN_LINES 8
@@ -82,8 +82,6 @@ typedef struct __araylist
     char     filename[FNAME_LEN];
     int      capacity;
     int      length;
-
-
 } Buffer;
 
 typedef void (*Action)(void);
