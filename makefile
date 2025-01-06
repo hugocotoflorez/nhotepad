@@ -1,5 +1,5 @@
-CC = gcc
-FLAGS = -Wall
+CC = clang
+FLAGS = -Wall -Wextra 
 NAME = nhotepad
 SRC = main.c ui.c input.c file.c buffer.c
 LIB = -L. -ltermstuff

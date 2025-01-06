@@ -151,7 +151,7 @@ queue_init()
 void
 enqueue(Trigger new_trigger)
 {
-    node_t *temp;
+    node_t *temp = NULL;
     node_t *new;
     assert(is_active_q == 1);
 
@@ -174,7 +174,7 @@ enqueue(Trigger new_trigger)
 void
 dequeue()
 {
-    node_t *temp;
+    node_t *temp = NULL;
     assert(is_active_q == 1);
 
     if (triggers_queue.head->next != NULL)
@@ -269,12 +269,10 @@ enableRawMode()
 {
     tcgetattr(STDIN_FILENO, &origin_termios);
     struct termios raw;
-    raw.c_iflag &=
-    ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-    raw.c_oflag &= ~(OPOST);
-    raw.c_cflag |= (CS8);
-    raw.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-    raw.c_cflag &= ~(CSIZE | PARENB);
+    cfmakeraw(&raw);
+    raw.c_oflag |= (OPOST | ONLCR);
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 1;
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
